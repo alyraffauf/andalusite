@@ -1,0 +1,31 @@
+---
+name: Build Images
+on:
+    pull_request:
+        branches:
+            - main
+    push:
+        branches:
+            - main
+        paths-ignore:
+            - "**/README.md"
+    workflow_dispatch:
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    build-andalusite:
+        name: Build andalusite
+        uses: ./.github/workflows/reusable_build.yml
+        secrets: inherit
+        permissions:
+            contents: read
+            packages: write
+            id-token: write
+        with:
+            image_name: "andalusite"
+            image_flavor: "main"
+            image_desc: "Andalusite - A clean COSMIC bootc image"
+            image_keywords: "bootc,ublue,universal-blue,cosmic"

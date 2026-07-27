@@ -1,0 +1,106 @@
+###############################################################################
+# BUILD ARGUMENTS
+###############################################################################
+ARG BASE_IMAGE_NAME="${BASE_IMAGE_NAME:-cosmic-atomic}"
+# Static value enables Renovate to detect and update the base image
+ARG BASE_IMAGE="quay.io/fedora-ostree-desktops/cosmic-atomic:44"
+ARG BREW_IMAGE="ghcr.io/ublue-os/brew:latest"
+ARG COMMON_IMAGE="ghcr.io/alyraffauf/kyanite-common:stable"
+ARG COMMON_IMAGE_SHA="sha256:8071adb49e734869a75d4cd6d8877c203fa07849cf3a9b15b3da620f0ef8c376"
+# SHA pinning enables Renovate to automatically update dependencies
+# See: https://docs.renovatebot.com/docker/#digest-pinning
+
+# Base Image @ fedora-ostree-desktops/cosmic-atomic (upstream Fedora COSMIC Atomic)
+ARG BASE_IMAGE_SHA="sha256:fc98cb38d1af95d39cd5d0822da836b96b32deacd985c554507b71648f42cfad"
+
+# Brew Image
+ARG BREW_IMAGE_SHA="sha256:07799dfe9ed44812a63d1b23c74e3e30b758a976f647032d916c34daf30f60a4"
+
+###############################################################################
+# IMPORT STAGES
+###############################################################################
+FROM ${BREW_IMAGE}@${BREW_IMAGE_SHA} AS brew
+FROM ${COMMON_IMAGE}@${COMMON_IMAGE_SHA} AS common
+
+FROM scratch AS ctx
+COPY /build /build
+COPY /files /files
+COPY /brew /brew
+COPY /flatpaks /flatpaks
+COPY /ujust /ujust
+COPY /packages.json /packages.json
+COPY /services.json /services.json
+COPY --from=common / /common
+
+# Import Homebrew files
+COPY --from=brew /system_files /oci/brew
+
+###############################################################################
+# MAIN IMAGE
+###############################################################################
+FROM ${BASE_IMAGE}@${BASE_IMAGE_SHA} AS base
+
+# Build arguments for image metadata and variant selection
+ARG IMAGE_NAME="${IMAGE_NAME:-andalusite}"
+ARG IMAGE_VENDOR="${IMAGE_VENDOR:-alyraffauf}"
+ARG IMAGE_FLAVOR="${IMAGE_FLAVOR:-main}"
+ARG BASE_IMAGE_NAME="${BASE_IMAGE_NAME:-cosmic-atomic}"
+ARG SHA_HEAD_SHORT="${SHA_HEAD_SHORT:-}"
+ARG UBLUE_IMAGE_TAG="${UBLUE_IMAGE_TAG:-stable}"
+
+# Labels for image metadata
+LABEL org.opencontainers.image.name="${IMAGE_NAME}"
+LABEL org.opencontainers.image.vendor="${IMAGE_VENDOR}"
+LABEL org.opencontainers.image.flavor="${IMAGE_FLAVOR}"
+
+###############################################################################
+# BUILD PROCESS
+###############################################################################
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    IMAGE_FLAVOR="${IMAGE_FLAVOR}" \
+    /ctx/build/01-stage-brewfiles.sh
+
+RUN --mount=type=cache,dst=/var/cache/dnf \
+    --mount=type=cache,dst=/var/log \
+    --mount=type=bind,from=ctx,source=/,target=/ctx \
+    IMAGE_FLAVOR="${IMAGE_FLAVOR}" \
+    /ctx/build/02-fedora-packages.sh
+
+RUN --mount=type=cache,dst=/var/cache/dnf \
+    --mount=type=cache,dst=/var/log \
+    --mount=type=bind,from=ctx,source=/,target=/ctx \
+    IMAGE_FLAVOR="${IMAGE_FLAVOR}" \
+    /ctx/build/03-third-party-packages.sh
+
+# 04-workarounds seds third-party .desktop files; must follow step 03.
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    /ctx/build/04-workarounds.sh
+
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    IMAGE_FLAVOR="${IMAGE_FLAVOR}" \
+    /ctx/build/05-copy-files.sh
+
+# 06-systemd enables units that may be shipped by step 05; must follow it.
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    IMAGE_FLAVOR="${IMAGE_FLAVOR}" \
+    /ctx/build/06-systemd.sh
+
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    /ctx/build/07-homebrew.sh
+
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    IMAGE_FLAVOR="${IMAGE_FLAVOR}" \
+    IMAGE_NAME="${IMAGE_NAME}" \
+    IMAGE_VENDOR="${IMAGE_VENDOR}" \
+    BASE_IMAGE_NAME="${BASE_IMAGE_NAME}" \
+    SHA_HEAD_SHORT="${SHA_HEAD_SHORT}" \
+    UBLUE_IMAGE_TAG="${UBLUE_IMAGE_TAG}" \
+    /ctx/build/08-branding.sh
+
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    /ctx/build/09-cleanup.sh
+
+###############################################################################
+# FINALIZE
+###############################################################################
+RUN bootc container lint

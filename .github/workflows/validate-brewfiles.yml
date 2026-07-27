@@ -1,0 +1,47 @@
+---
+name: Validate Brewfiles
+permissions:
+    contents: read
+
+on:
+    pull_request:
+        paths:
+            - "brew/**/*.Brewfile"
+
+jobs:
+    validate:
+        name: Validate Brewfiles
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+            - name: Set Up Homebrew
+              uses: Homebrew/actions/setup-homebrew@15d0b666bf0311bfe676c178e0824dc1b52074a7 # master
+
+            - name: Validate Brewfiles
+              run: |
+                  echo "Validating Brewfiles in brew/ directory..."
+                  echo ""
+
+                  set -euo pipefail
+
+                  find "brew" -type f -iname '*.Brewfile' -print0 | \
+                    while IFS= read -r -d '' brewfile; do
+                      echo "::group::Validating $(basename "${brewfile}")"
+                      grep -E -e "^tap" "${brewfile}" > taps.Brewfile || echo "# No taps" > taps.Brewfile
+                      set -x
+                      brew bundle --file=./taps.Brewfile
+                      if brew bundle exec whoami --file="${brewfile}" | grep -F -e "${USER}"; then
+                        set +x
+                        echo "✓ $(basename "${brewfile}") passed validation"
+                      else
+                        set +x
+                        echo "✗ $(basename "${brewfile}") validation failed"
+                        exit 1
+                      fi
+                      echo "::endgroup::"
+                    done
+
+                  echo ""
+                  echo "All Brewfiles validated successfully"

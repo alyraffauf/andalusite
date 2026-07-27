@@ -1,0 +1,50 @@
+---
+name: Validate Justfiles
+permissions:
+    contents: read
+
+on:
+    pull_request:
+        paths:
+            - "ujust/**"
+            - "Justfile"
+
+jobs:
+    validate:
+        name: Validate Justfiles
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+            - name: Install Just
+              uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
+
+            - name: Validate Justfiles
+              run: |
+                  echo "Validating Justfiles..."
+                  echo ""
+
+                  set -euo pipefail
+
+                  # Validate root Justfile
+                  echo "::group::Validating Justfile"
+                  set -x
+                  just --unstable --fmt --check -f Justfile
+                  set +x
+                  echo "✓ Justfile passed validation"
+                  echo "::endgroup::"
+
+                  # Validate ujust files
+                  find "ujust" -iname '*.just' -print0 | \
+                    while IFS= read -r -d '' justfile; do
+                      echo "::group::Validating $(basename "${justfile}")"
+                      set -x
+                      just --unstable --fmt --check -f "${justfile}"
+                      set +x
+                      echo "✓ $(basename "${justfile}") passed validation"
+                      echo "::endgroup::"
+                    done
+
+                  echo ""
+                  echo "All Justfiles validated successfully"

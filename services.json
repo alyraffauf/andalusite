@@ -1,0 +1,29 @@
+{
+    "variants": {
+        "main": {
+            "system": {
+                "enable": [
+                    "flatpak-nuke-fedora.service",
+                    "flatpak-preinstall.service",
+                    "podman.socket",
+                    "rpm-ostreed-automatic.timer"
+                ],
+                "disable": []
+            },
+            "user": {
+                "enable": ["bazaar.service", "podman-auto-update.timer", "podman.socket"],
+                "disable": []
+            }
+        },
+        "dx": {
+            "system": {
+                "enable": [],
+                "disable": []
+            },
+            "user": {
+                "enable": [],
+                "disable": []
+            }
+        }
+    }
+}
