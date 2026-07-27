@@ -36,11 +36,6 @@ systemctl mask systemd-remount-fs.service
 #sed -i '/<entry name="launchers" type="StringList">/,/<\/entry>/ s/<default>[^<]*<\/default>/<default>preferred:\/\/browser,applications:com.mitchellh.ghostty.desktop,applications:io.github.kolunmi.Bazaar.desktop,preferred:\/\/filemanager<\/default>/' \
 #    /usr/share/plasma/plasmoids/org.kde.plasma.taskmanager/contents/config/main.xml
 
-# Configure Ghostty for KDE
-sed -i 's@\[Desktop Action new-window\]@\[Desktop Action new-window\]\nX-KDE-Shortcuts=Ctrl+Alt+T@g' /usr/share/applications/com.mitchellh.ghostty.desktop
-sed -i 's@Keywords=@Keywords=konsole;console;@g' /usr/share/applications/com.mitchellh.ghostty.desktop
-cp /usr/share/applications/com.mitchellh.ghostty.desktop /usr/share/kglobalaccel/
-
 # Configure Vicinae launcher for KDE (Super+Space to toggle)
 # sed -i 's@\[Desktop Action toggle\]@\[Desktop Action toggle\]\nX-KDE-Shortcuts=Meta+Space@g' /usr/share/applications/vicinae.desktop
 # cp /usr/share/applications/vicinae.desktop /usr/share/kglobalaccel/
