@@ -2,10 +2,6 @@
 
 set -eoux pipefail
 
-# Source helper functions
-# shellcheck source=/dev/null
-source /ctx/build/copr-helpers.sh
-
 ###############################################################################
 # Third-Party Package Installation
 ###############################################################################
@@ -39,12 +35,6 @@ dnf5 config-manager addrepo \
     --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo
 dnf5 config-manager setopt tailscale-stable.enabled=0
 dnf5 -y install --enablerepo=tailscale-stable tailscale
-
-echo "::endgroup::"
-
-echo "::group:: Install COPR packages"
-
-copr_install_isolated "scottames/ghostty" "ghostty"
 
 echo "::endgroup::"
 
