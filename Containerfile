@@ -11,7 +11,7 @@ ARG COMMON_IMAGE_SHA="sha256:a1fa1ab4801f089c4d07481268bb283fa24bcbb902266caf557
 # See: https://docs.renovatebot.com/docker/#digest-pinning
 
 # Base Image @ fedora-ostree-desktops/cosmic-atomic (upstream Fedora COSMIC Atomic)
-ARG BASE_IMAGE_SHA="sha256:d7e9db6935d66990c2388eff0d35ad071e14604daa5862231dcb87e4d39aeb32"
+ARG BASE_IMAGE_SHA="sha256:24d18d600620b5d0720634ffbdba142a947a587e0456de9bb178af066b41c94e"
 
 # Brew Image
 ARG BREW_IMAGE_SHA="sha256:de0391c67209703bdf1249079c8d478d44eff864d62e7ec6f12aaa382bdf21df"
